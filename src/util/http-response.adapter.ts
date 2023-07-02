@@ -58,11 +58,4 @@ export class ApiResponse {
       msg: 'Acesso não autorizado!',
     });
   }
-
-  public static invalidCredentials2(res: Response) {
-    return res.status(401).send({
-      ok: false,
-      msg: 'Senha!',
-    });
-  }
 }
