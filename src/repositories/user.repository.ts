@@ -1,51 +1,81 @@
-import { users } from '../database/usersDB';
-import { Task } from '../models/task.model';
+import { Database } from '../database/config/database.connection';
+import { UserEntity } from '../database/entities/user.entity';
+import { User } from '../models/user.model';
 
 export class UserRepository {
-  public getById(id: string) {
-    return users.find((user) => user.id === id);
+  private connection = Database.connection.getRepository(UserEntity);
+
+  public async create(user: User) {
+    const userEntity = this.connection.create({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      password: user.password,
+    });
+
+    const results = await this.connection.save(userEntity);
+
+    return UserRepository.toModel(results);
   }
 
-  public getByEmail(email: string) {
-    return users.find((user) => user.email === email);
+  public async list() {
+    const results = await this.connection.find();
+
+    return results.map((entity) => UserRepository.toModel(entity));
   }
 
-  public findIndex(id: string) {
-    return users.findIndex((user) => user.id === id);
+  public async get(id: string) {
+    const result = await this.connection.findOne({
+      where: {
+        id,
+      },
+    });
+
+    if (!result) {
+      return result;
+    }
+
+    return UserRepository.toModel(result);
   }
 
-  public addTask(index: number, task: Task) {
-    return users[index].tasks.push(task);
+  public async getByEmail(email: string) {
+    const result = await this.connection.findOne({ where: { email } });
+
+    if (!result) {
+      return undefined;
+    }
+
+    return UserRepository.toModel(result);
   }
 
-  public listTasks(index: number) {
-    return users[index].tasks;
+  public async exist(id: string) {
+    const result = await this.connection.exist({ where: { id } });
+
+    return result;
   }
 
-  public findTaskIndex(userId: string, taskId: string) {
-    const userIndex = users.findIndex((user) => user.id === userId);
-    return users[userIndex].tasks.findIndex((task) => task.id === taskId);
+  public async update(user: User) {
+    await this.connection.update(
+      {
+        id: user.id,
+      },
+      {
+        name: user.name,
+        password: user.password,
+        email: user.email,
+      }
+    );
   }
 
-  public getTaskById(userId: string, taskId: string) {
-    const userIndex = users.findIndex((user) => user.id === userId);
-    return users[userIndex].tasks.find((task) => task.id === taskId);
+  public async delete(id: string) {
+    const result = await this.connection.delete({
+      id,
+    });
+
+    return result.affected ?? 0;
   }
 
-  public updateTask(userId: string, taskId: string, detail: string, description: string) {
-    const userIndex = users.findIndex((user) => user.id === userId);
-    const taskIndex = users[userIndex].tasks.findIndex((task) => task.id === taskId);
-
-    users[userIndex].tasks[taskIndex].detail = detail;
-    users[userIndex].tasks[taskIndex].description = description;
-
-    return users[userIndex].tasks[taskIndex];
-  }
-
-  public deleteTask(userId: string, taskId: string) {
-    const userIndex = users.findIndex((user) => user.id === userId);
-    const taskIndex = users[userIndex].tasks.findIndex((task) => task.id === taskId);
-
-    return users[userIndex].tasks.splice(taskIndex, 1);
+  public static toModel(entity: UserEntity | null): User {
+    return User.create(entity);
   }
 }

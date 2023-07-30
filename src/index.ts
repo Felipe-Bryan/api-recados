@@ -2,6 +2,7 @@ import express from 'express';
 import { userRoutes } from './routes/user.routes';
 import cors from 'cors';
 import * as dotenv from 'dotenv';
+import { Database } from './database/config/database.connection';
 
 dotenv.config();
 
@@ -11,6 +12,10 @@ app.use(cors());
 
 app.use('/user', userRoutes());
 
-app.listen(process.env.PORT, () => {
-  console.log(`Server running at port ${process.env.PORT} !`);
+Database.connect().then(() => {
+  console.log('Database is connected!');
+
+  app.listen(process.env.PORT, () => {
+    console.log('Servidor rodando na porta ' + process.env.PORT + '!');
+  });
 });

@@ -25,6 +25,10 @@ export class User {
     return this._id;
   }
 
+  public set id(id: string) {
+    this._id = id;
+  }
+
   public get email(): string {
     return this._email;
   }
@@ -56,5 +60,19 @@ export class User {
       email: this._email,
       tasks: this._tasks.map((task) => task.toJson()),
     };
+  }
+
+  public toList() {
+    return {
+      id: this._id,
+      email: this._email,
+    };
+  }
+
+  public static create(entity: any) {
+    const user = new User(entity.name, entity.email, entity.password);
+    user.id = entity.id;
+
+    return user;
   }
 }

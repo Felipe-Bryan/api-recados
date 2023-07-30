@@ -45,6 +45,13 @@ export class ApiResponse {
     });
   }
 
+  public static alreadyExists(res: Response, field: string) {
+    return res.status(400).send({
+      ok: false,
+      msg: `Já existe usuário com este ${field}`,
+    });
+  }
+
   public static badRequest(res: Response, msg: string) {
     return res.status(400).send({
       ok: false,

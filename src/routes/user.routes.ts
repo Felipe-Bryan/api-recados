@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import { UserController } from '../controllers/user.controller';
 import { UserMiddleware } from '../middlewares/user.middleware';
-import { TaskController } from '../controllers/task.controller';
-import { TaskMiddleware } from '../middlewares/task.middleware';
+import { taskRoutes } from './task.routes';
 
 export const userRoutes = () => {
   const app = Router();
 
   // Users
   app.get('/', new UserController().list);
+  app.get('/:id', new UserController().get);
   app.post(
     '/',
     [UserMiddleware.validateCreateFields, UserMiddleware.validateEmailAlreadyExists],
@@ -19,15 +19,7 @@ export const userRoutes = () => {
   app.delete('/:id', new UserController().delete);
 
   // Tasks
-  app.get('/:userId/tasks', new TaskController().list);
-  app.get('/:userId/:taskId', new TaskController().getById);
-  app.post(
-    '/:userId',
-    [TaskMiddleware.validateFieldsCreate, TaskMiddleware.validateLengthFields],
-    new TaskController().create
-  );
-  app.put('/:userId/:taskId', new TaskController().update);
-  app.delete('/:userId/:taskId', new TaskController().delete);
+  app.use('/:userId/tasks', taskRoutes());
 
   return app;
 };

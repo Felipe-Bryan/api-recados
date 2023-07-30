@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { ApiResponse } from '../util/http-response.adapter';
-import { users } from '../database/usersDB';
+import { UserRepository } from '../repositories/user.repository';
 
 export class UserMiddleware {
   public static validateCreateFields(req: Request, res: Response, next: NextFunction) {
@@ -33,11 +33,11 @@ export class UserMiddleware {
     }
   }
 
-  public static validateEmailAlreadyExists(req: Request, res: Response, next: NextFunction) {
+  public static async validateEmailAlreadyExists(req: Request, res: Response, next: NextFunction) {
     try {
       const { email } = req.body;
 
-      const userEmail = users.some((user) => user.email === email);
+      const userEmail = await new UserRepository().getByEmail(email);
 
       if (userEmail) {
         return ApiResponse.badRequest(res, 'Email already exists');
@@ -45,6 +45,22 @@ export class UserMiddleware {
 
       next();
     } catch (error: any) {
+      return ApiResponse.serverError(res, error);
+    }
+  }
+
+  public static async validateUser(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { userId } = req.params;
+
+      const user = await new UserRepository().get(userId);
+
+      if (!user) {
+        return ApiResponse.notFound(res, 'User');
+      }
+
+      next();
+    } catch (error) {
       return ApiResponse.serverError(res, error);
     }
   }

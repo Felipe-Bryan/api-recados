@@ -2,110 +2,94 @@ import { Request, Response } from 'express';
 import { UserRepository } from '../repositories/user.repository';
 import { ApiResponse } from '../util/http-response.adapter';
 import { Task } from '../models/task.model';
+import { TaskRepository } from '../repositories/task.repository';
 
 export class TaskController {
-  public create(req: Request, res: Response) {
+  public async create(req: Request, res: Response) {
     try {
       const { userId } = req.params;
       const { description, detail } = req.body;
 
-      const userIndex = new UserRepository().findIndex(userId);
-      if (userIndex < 0) {
-        return ApiResponse.notFound(res, 'User');
-      }
+      const task = new Task(detail, description, userId);
 
-      const task = new Task(detail, description);
-      const addTask = new UserRepository().addTask(userIndex, task);
+      const result = await new TaskRepository().create(task, userId);
 
-      return ApiResponse.created(res, addTask, 'Recado adicionado com sucesso');
+      return ApiResponse.created(res, result.toJson(), 'Recado adicionado com sucesso');
     } catch (error) {
       return ApiResponse.serverError(res, error);
     }
   }
 
-  public getById(req: Request, res: Response) {
-    try {
-      const { userId, TaskId } = req.params;
-
-      const userIndex = new UserRepository().findIndex(userId);
-      if (userIndex < 0) {
-        return ApiResponse.notFound(res, 'User');
-      }
-
-      const taskIndex = new UserRepository().findTaskIndex(userId, TaskId);
-      if (taskIndex < 0) {
-        return ApiResponse.notFound(res, 'Task');
-      }
-
-      const task = new UserRepository().getTaskById(userId, TaskId);
-
-      return ApiResponse.success(res, task, 'Recado encontrado com sucesso');
-    } catch (error) {
-      return ApiResponse.serverError(res, error);
-    }
-  }
-
-  public list(req: Request, res: Response) {
+  public async listUserTasks(req: Request, res: Response) {
     try {
       const { userId } = req.params;
-      const userIndex = new UserRepository().findIndex(userId);
 
-      if (userIndex < 0) {
-        return ApiResponse.notFound(res, 'User');
-      }
+      let tasks = await new TaskRepository().listUserTasks(userId);
 
-      const tasks = new UserRepository().listTasks(userIndex);
-
-      return ApiResponse.success(res, tasks, 'Recados listados com sucesso');
+      return ApiResponse.success(
+        res,
+        tasks.map((task) => task.toJson()),
+        'Tasks sucessfully listed'
+      );
     } catch (error) {
       return ApiResponse.serverError(res, error);
     }
   }
 
-  public update(req: Request, res: Response) {
+  public async getById(req: Request, res: Response) {
     try {
-      const { userId, taskId } = req.params;
+      const { id } = req.params;
+
+      const task = await new TaskRepository().getById(id);
+
+      if (!task) {
+        return ApiResponse.notFound(res, 'Task');
+      }
+
+      return ApiResponse.success(res, task.toJson(), 'Recado encontrado');
+    } catch (error) {
+      return ApiResponse.serverError(res, error);
+    }
+  }
+
+  public async update(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
       const { detail, description } = req.body;
 
-      const userIndex = new UserRepository().findIndex(userId);
+      const task = await new TaskRepository().getById(id);
 
-      if (userIndex < 0) {
-        return ApiResponse.notFound(res, 'User');
-      }
-
-      const taskIndex = new UserRepository().findTaskIndex(userId, taskId);
-
-      if (taskIndex < 0) {
+      if (!task) {
         return ApiResponse.notFound(res, 'Task');
       }
 
-      const task = new UserRepository().updateTask(userId, taskId, detail, description);
+      if (detail) {
+        task.detail = detail;
+      }
 
-      return ApiResponse.created(res, task, 'Recado editado com sucesso!');
+      if (description) {
+        task.description = description;
+      }
+
+      await new TaskRepository().update(task);
+
+      return ApiResponse.success(res, task.toJson(), 'Recado atualizado com sucesso!');
     } catch (error) {
       return ApiResponse.serverError(res, error);
     }
   }
 
-  public delete(req: Request, res: Response) {
+  public async delete(req: Request, res: Response) {
     try {
-      const { userId, taskId } = req.params;
+      const { id } = req.params;
 
-      const userIndex = new UserRepository().findIndex(userId);
+      const deleted = await new TaskRepository().delete(id);
 
-      if (userIndex < 0) {
-        return ApiResponse.notFound(res, 'User');
+      if (deleted == 0) {
+        return ApiResponse.notFound(res, 'Recado');
       }
 
-      const taskIndex = new UserRepository().findTaskIndex(userId, taskId);
-
-      if (taskIndex < 0) {
-        return ApiResponse.notFound(res, 'Task');
-      }
-
-      const task = new UserRepository().deleteTask(userId, taskId);
-
-      return ApiResponse.success(res, task, 'Recado deletado com sucesso');
+      return ApiResponse.success(res, '', 'Recado deletado!');
     } catch (error) {
       return ApiResponse.serverError(res, error);
     }
